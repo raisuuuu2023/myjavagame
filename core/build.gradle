@@ -10,9 +10,6 @@ dependencies {
   api "com.badlogicgames.gdx:gdx-bullet:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
-  api "org.apache.groovy:groovy-all:$groovyVersion"
-  api "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-  api "org.scala-lang:scala3-library_3:$scalaVersion"
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
