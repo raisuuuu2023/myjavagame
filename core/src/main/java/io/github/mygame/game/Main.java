@@ -18,37 +18,37 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 
 public class Main implements ApplicationListener {
     Texture backgroundTexture;
-    Texture bucketTexture;
-    Texture dropTexture;
-    Sound dropSound;
-    Music music;
+    Texture newtonTexture;
+    Texture appleTexture;
+    Sound appleFallSound;
+    Music backgroundMusic;
     SpriteBatch spriteBatch;
     FitViewport viewport;
-    Sprite bucketSprite;
+    Sprite newtonSprite;
     Vector2 touchPos;
-    Array<Sprite> dropSprites;
-    float dropTimer;
-    Rectangle bucketRectangle;
-    Rectangle dropRectangle;
+    Array<Sprite> appleSprites;
+    float appleTimer;
+    Rectangle newtonRectangle;
+    Rectangle appleRectangle;
 
     @Override
     public void create() {
-        backgroundTexture = new Texture("background.png");
-        bucketTexture = new Texture("bucket.png");
-        dropTexture = new Texture("drop.png");
-        dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
-        music = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
+        backgroundTexture = new Texture("math.jpg");
+        newtonTexture = new Texture("Newton.png");
+        appleTexture = new Texture("Apple.png");
+        appleFallSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
+        backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
         spriteBatch = new SpriteBatch();
-        viewport = new FitViewport(8, 5);
-        bucketSprite = new Sprite(bucketTexture);
-        bucketSprite.setSize(1, 1);
+        viewport = new FitViewport(8, 6);
+        newtonSprite = new Sprite(newtonTexture);
+        newtonSprite.setSize(2, 1);
         touchPos = new Vector2();
-        dropSprites = new Array<>();
-        bucketRectangle = new Rectangle();
-        dropRectangle = new Rectangle();
-        music.setLooping(true);
-        music.setVolume(.5f);
-        music.play();
+        appleSprites = new Array<>();
+        newtonRectangle = new Rectangle();
+        appleRectangle = new Rectangle();
+        backgroundMusic.setLooping(true);
+        backgroundMusic.setVolume(.5f);
+        backgroundMusic.play();
     }
 
     @Override
@@ -68,48 +68,48 @@ public class Main implements ApplicationListener {
         float delta = Gdx.graphics.getDeltaTime();
 
         if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            bucketSprite.translateX(speed * delta);
+            newtonSprite.translateX(speed * delta);
         } else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            bucketSprite.translateX(-speed * delta);
+            newtonSprite.translateX(-speed * delta);
         }
 
         if (Gdx.input.isTouched()) {
             touchPos.set(Gdx.input.getX(), Gdx.input.getY());
             viewport.unproject(touchPos);
-            bucketSprite.setCenterX(touchPos.x);
+            newtonSprite.setCenterX(touchPos.x);
         }
     }
 
     private void logic() {
         float worldWidth = viewport.getWorldWidth();
         float worldHeight = viewport.getWorldHeight();
-        float bucketWidth = bucketSprite.getWidth();
-        float bucketHeight = bucketSprite.getHeight();
+        float newtonWidth = newtonSprite.getWidth();
+        float newtonHeight = newtonSprite.getHeight();
 
-        bucketSprite.setX(MathUtils.clamp(bucketSprite.getX(), 0, worldWidth - bucketWidth));
+        newtonSprite.setX(MathUtils.clamp(newtonSprite.getX(), 0, worldWidth - newtonWidth));
 
         float delta = Gdx.graphics.getDeltaTime();
-        bucketRectangle.set(bucketSprite.getX(), bucketSprite.getY(), bucketWidth, bucketHeight);
+        newtonRectangle.set(newtonSprite.getX(), newtonSprite.getY(), newtonWidth, newtonHeight);
 
-        for (int i = dropSprites.size - 1; i >= 0; i--) {
-            Sprite dropSprite = dropSprites.get(i);
-            float dropWidth = dropSprite.getWidth();
-            float dropHeight = dropSprite.getHeight();
+        for (int i = appleSprites.size - 1; i >= 0; i--) {
+            Sprite appleSprite = appleSprites.get(i);
+            float appleWidth = appleSprite.getWidth();
+            float appleHeight = appleSprite.getHeight();
 
-            dropSprite.translateY(-2f * delta);
-            dropRectangle.set(dropSprite.getX(), dropSprite.getY(), dropWidth, dropHeight);
+            appleSprite.translateY(-2f * delta);
+            appleRectangle.set(appleSprite.getX(), appleSprite.getY(), appleWidth, appleHeight);
 
-            if (dropSprite.getY() < -dropHeight) dropSprites.removeIndex(i);
-            else if (bucketRectangle.overlaps(dropRectangle)) {
-                dropSprites.removeIndex(i);
-                dropSound.play();
+            if (appleSprite.getY() < -appleHeight) appleSprites.removeIndex(i);
+            else if (newtonRectangle.overlaps(appleRectangle)) {
+                appleSprites.removeIndex(i);
+                appleFallSound.play();
             }
         }
 
-        dropTimer += delta;
-        if (dropTimer > 1f) {
-            dropTimer = 0;
-            createDroplet();
+        appleTimer += delta;
+        if (appleTimer > 1f) {
+            appleTimer = 0;
+            createApple();
         }
     }
 
@@ -123,26 +123,26 @@ public class Main implements ApplicationListener {
         float worldHeight = viewport.getWorldHeight();
 
         spriteBatch.draw(backgroundTexture, 0, 0, worldWidth, worldHeight);
-        bucketSprite.draw(spriteBatch);
+        newtonSprite.draw(spriteBatch);
 
-        for (Sprite dropSprite : dropSprites) {
-            dropSprite.draw(spriteBatch);
+        for (Sprite appleSprite : appleSprites) {
+            appleSprite.draw(spriteBatch);
         }
 
         spriteBatch.end();
     }
 
-    private void createDroplet() {
-        float dropWidth = 1;
-        float dropHeight = 1;
+    private void createApple() {
+        float appleWidth = 1;
+        float appleHeight = 1;
         float worldWidth = viewport.getWorldWidth();
         float worldHeight = viewport.getWorldHeight();
 
-        Sprite dropSprite = new Sprite(dropTexture);
-        dropSprite.setSize(dropWidth, dropHeight);
-        dropSprite.setX(MathUtils.random(0f, worldWidth - dropWidth));
-        dropSprite.setY(worldHeight);
-        dropSprites.add(dropSprite);
+        Sprite appleSprite = new Sprite(appleTexture);
+        appleSprite.setSize(appleWidth, appleHeight);
+        appleSprite.setX(MathUtils.random(0f, worldWidth - appleWidth));
+        appleSprite.setY(worldHeight);
+        appleSprites.add(appleSprite);
     }
 
     @Override
