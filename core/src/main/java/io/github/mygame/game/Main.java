@@ -15,6 +15,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 public class Main implements ApplicationListener {
     Texture backgroundTexture;
@@ -30,6 +31,8 @@ public class Main implements ApplicationListener {
     float appleTimer;
     Rectangle newtonRectangle;
     Rectangle appleRectangle;
+    boolean gameOver;
+    BitmapFont font;
 
     @Override
     public void create() {
@@ -46,6 +49,8 @@ public class Main implements ApplicationListener {
         appleSprites = new Array<>();
         newtonRectangle = new Rectangle();
         appleRectangle = new Rectangle();
+        gameOver = false;
+        font = new BitmapFont();
         backgroundMusic.setLooping(true);
         backgroundMusic.setVolume(.5f);
         backgroundMusic.play();
@@ -58,6 +63,11 @@ public class Main implements ApplicationListener {
 
     @Override
     public void render() {
+        if (gameOver) {
+            drawGameOver();
+            return;
+        }
+
         input();
         logic();
         draw();
@@ -99,8 +109,11 @@ public class Main implements ApplicationListener {
             appleSprite.translateY(-2f * delta);
             appleRectangle.set(appleSprite.getX(), appleSprite.getY(), appleWidth, appleHeight);
 
-            if (appleSprite.getY() < -appleHeight) appleSprites.removeIndex(i);
-            else if (newtonRectangle.overlaps(appleRectangle)) {
+            if (appleSprite.getY() < -appleHeight) {
+                gameOver = true; // Trigger game over when an apple falls off screen
+                appleSprites.removeIndex(i);
+                Gdx.app.exit(); // Close the game window/tab
+            } else if (newtonRectangle.overlaps(appleRectangle)) {
                 appleSprites.removeIndex(i);
                 appleFallSound.play();
             }
@@ -145,18 +158,29 @@ public class Main implements ApplicationListener {
         appleSprites.add(appleSprite);
     }
 
+    private void drawGameOver() {
+        spriteBatch.begin();
+        font.setColor(Color.RED);
+        font.draw(spriteBatch, "GAME OVER", viewport.getWorldWidth() / 2 - 100, viewport.getWorldHeight() / 2);
+        spriteBatch.end();
+    }
+
     @Override
     public void pause() {
-
     }
 
     @Override
     public void resume() {
-
     }
 
     @Override
     public void dispose() {
-
+        backgroundTexture.dispose();
+        newtonTexture.dispose();
+        appleTexture.dispose();
+        appleFallSound.dispose();
+        backgroundMusic.dispose();
+        spriteBatch.dispose();
+        font.dispose();
     }
 }
