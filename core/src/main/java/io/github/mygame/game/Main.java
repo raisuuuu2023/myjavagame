@@ -15,6 +15,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 public class Main implements ApplicationListener {
@@ -50,6 +51,11 @@ public class Main implements ApplicationListener {
         newtonRectangle = new Rectangle();
         appleRectangle = new Rectangle();
         gameOver = false;
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Lacquer.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 48;
+        font = generator.generateFont(parameter);
+        generator.dispose();
         font = new BitmapFont();
         backgroundMusic.setLooping(true);
         backgroundMusic.setVolume(.5f);
@@ -110,22 +116,22 @@ public class Main implements ApplicationListener {
             appleRectangle.set(appleSprite.getX(), appleSprite.getY(), appleWidth, appleHeight);
 
             if (appleSprite.getY() < -appleHeight) {
-                gameOver = true; // Trigger game over when an apple falls off screen
+                gameOver = true;
                 appleSprites.removeIndex(i);
-                Gdx.app.exit(); // Close the game window/tab
+                Gdx.app.exit();
             } else if (newtonRectangle.overlaps(appleRectangle)) {
                 appleSprites.removeIndex(i);
                 appleFallSound.play();
             }
         }
-
-        appleTimer += delta;
-        if (appleTimer > 1f) {
-            appleTimer = 0;
-            createApple();
+        if (!gameOver) {
+            appleTimer += delta;
+            if (appleTimer > 1f) {
+                appleTimer = 0;
+                createApple();
+            }
         }
     }
-
     private void draw() {
         ScreenUtils.clear(Color.BLACK);
         viewport.apply();
