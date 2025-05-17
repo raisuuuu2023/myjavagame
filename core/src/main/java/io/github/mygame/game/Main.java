@@ -22,16 +22,17 @@ public class Main implements ApplicationListener {
     Texture backgroundTexture;
     Texture newtonTexture;
     Texture appleTexture;
+    Texture coconutTexture;
     Sound appleFallSound;
     Music backgroundMusic;
     SpriteBatch spriteBatch;
     FitViewport viewport;
     Sprite newtonSprite;
     Vector2 touchPos;
-    Array<Sprite> appleSprites;
-    float appleTimer;
+    Array<Sprite> fallingObjects;
+    float spawnTimer;
     Rectangle newtonRectangle;
-    Rectangle appleRectangle;
+    Rectangle objectRectangle;
     boolean gameOver;
     BitmapFont font;
     GlyphLayout layout;
@@ -41,6 +42,7 @@ public class Main implements ApplicationListener {
         backgroundTexture = new Texture(Gdx.files.internal("math.jpg"));
         newtonTexture = new Texture(Gdx.files.internal("Newton.png"));
         appleTexture = new Texture(Gdx.files.internal("Apple.png"));
+        coconutTexture = new Texture(Gdx.files.internal("coconut.png"));
         appleFallSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
 
@@ -52,13 +54,14 @@ public class Main implements ApplicationListener {
         newtonSprite.setPosition(3, 0.5f);
 
         touchPos = new Vector2();
-        appleSprites = new Array<>();
+        fallingObjects = new Array<>();
         newtonRectangle = new Rectangle();
-        appleRectangle = new Rectangle();
+        objectRectangle = new Rectangle();
         gameOver = false;
 
         font = new BitmapFont();
-        font.getData().setScale(0.09f);
+        font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        font.getData().setScale(0.08f);
         layout = new GlyphLayout();
 
         backgroundMusic.setLooping(true);
@@ -93,8 +96,8 @@ public class Main implements ApplicationListener {
         spriteBatch.draw(backgroundTexture, 0, 0, viewport.getWorldWidth(), viewport.getWorldHeight());
         newtonSprite.draw(spriteBatch);
 
-        for (Sprite apple : appleSprites) {
-            apple.draw(spriteBatch);
+        for (Sprite obj : fallingObjects) {
+            obj.draw(spriteBatch);
         }
         spriteBatch.end();
     }
@@ -121,38 +124,53 @@ public class Main implements ApplicationListener {
 
         float delta = Gdx.graphics.getDeltaTime();
         newtonRectangle.set(newtonSprite.getX(), newtonSprite.getY(), newtonSprite.getWidth(), newtonSprite.getHeight());
-        for (int i = appleSprites.size - 1; i >= 0; i--) {
-            Sprite apple = appleSprites.get(i);
-            apple.translateY(-2f * delta);
-            appleRectangle.set(apple.getX(), apple.getY(), apple.getWidth(), apple.getHeight());
 
-            if (apple.getY() < -apple.getHeight()) {
-                gameOver = true;
-                backgroundMusic.stop();
+        for (int i = fallingObjects.size - 1; i >= 0; i--) {
+            Sprite obj = fallingObjects.get(i);
+            obj.translateY(-2f * delta);
+            objectRectangle.set(obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight());
+
+            if (obj.getY() < -obj.getHeight()) {
+                if (obj.getTexture() == appleTexture) {
+                    gameOver = true;
+                    backgroundMusic.stop();
+                }
+                fallingObjects.removeIndex(i);
                 break;
-            } else if (newtonRectangle.overlaps(appleRectangle)) {
-                appleSprites.removeIndex(i);
-                appleFallSound.play();
+            } else if (newtonRectangle.overlaps(objectRectangle)) {
+                if (obj.getTexture() == coconutTexture) {
+                    gameOver = true;
+                    backgroundMusic.stop();
+                } else {
+                    appleFallSound.play();
+                }
+                fallingObjects.removeIndex(i);
             }
         }
 
         if (!gameOver) {
-            appleTimer += delta;
-            if (appleTimer > 1f) {
-                appleTimer = 0;
-                spawnApple();
+            spawnTimer += delta;
+            if (spawnTimer > 1f) {
+                spawnTimer = 0;
+                spawnFallingObject();
             }
         }
     }
 
-    private void spawnApple() {
-        Sprite apple = new Sprite(appleTexture);
-        apple.setSize(0.8f, 0.8f);
-        apple.setPosition(
-            MathUtils.random(0, viewport.getWorldWidth() - apple.getWidth()),
+    private void spawnFallingObject() {
+        Sprite obj;
+        if (MathUtils.random(1, 4) == 1) {
+            obj = new Sprite(coconutTexture);
+        } else {
+            obj = new Sprite(appleTexture);
+        }
+
+        obj.setSize(0.8f, 0.8f);
+        obj.setPosition(
+            MathUtils.random(0, viewport.getWorldWidth() - obj.getWidth()),
             viewport.getWorldHeight()
         );
-        appleSprites.add(apple);
+        fallingObjects.add(obj);
     }
 
     private void drawGameOver() {
@@ -162,7 +180,6 @@ public class Main implements ApplicationListener {
         spriteBatch.draw(backgroundTexture, 0, 0, viewport.getWorldWidth(), viewport.getWorldHeight());
         spriteBatch.setColor(Color.WHITE);
 
-        font.setColor(Color.WHITE);
         String text = "GAME OVER";
         layout.setText(font, text);
         float x = (viewport.getWorldWidth() - layout.width) / 2;
@@ -183,6 +200,7 @@ public class Main implements ApplicationListener {
         backgroundTexture.dispose();
         newtonTexture.dispose();
         appleTexture.dispose();
+        coconutTexture.dispose();
         appleFallSound.dispose();
         backgroundMusic.dispose();
         spriteBatch.dispose();
