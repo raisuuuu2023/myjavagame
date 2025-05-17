@@ -7,6 +7,7 @@ import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
@@ -15,7 +16,6 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 public class Main implements ApplicationListener {
@@ -34,31 +34,35 @@ public class Main implements ApplicationListener {
     Rectangle appleRectangle;
     boolean gameOver;
     BitmapFont font;
+    GlyphLayout layout;
 
     @Override
     public void create() {
-        backgroundTexture = new Texture("math.jpg");
-        newtonTexture = new Texture("Newton.png");
-        appleTexture = new Texture("Apple.png");
+        backgroundTexture = new Texture(Gdx.files.internal("math.jpg"));
+        newtonTexture = new Texture(Gdx.files.internal("Newton.png"));
+        appleTexture = new Texture(Gdx.files.internal("Apple.png"));
         appleFallSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
+
         spriteBatch = new SpriteBatch();
         viewport = new FitViewport(8, 6);
+
         newtonSprite = new Sprite(newtonTexture);
         newtonSprite.setSize(2, 1);
+        newtonSprite.setPosition(3, 0.5f);
+
         touchPos = new Vector2();
         appleSprites = new Array<>();
         newtonRectangle = new Rectangle();
         appleRectangle = new Rectangle();
         gameOver = false;
-        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Lacquer.ttf"));
-        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        parameter.size = 48;
-        font = generator.generateFont(parameter);
-        generator.dispose();
+
         font = new BitmapFont();
+        font.getData().setScale(0.09f);
+        layout = new GlyphLayout();
+
         backgroundMusic.setLooping(true);
-        backgroundMusic.setVolume(.5f);
+        backgroundMusic.setVolume(0.5f);
         backgroundMusic.play();
     }
 
@@ -69,14 +73,30 @@ public class Main implements ApplicationListener {
 
     @Override
     public void render() {
-        if (gameOver) {
-            drawGameOver();
-            return;
-        }
+        ScreenUtils.clear(Color.BLACK);
 
-        input();
-        logic();
-        draw();
+        viewport.apply();
+        spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
+
+        if (gameOver) {
+            drawGameScreen();
+            drawGameOver();
+        } else {
+            drawGameScreen();
+            input();
+            logic();
+        }
+    }
+
+    private void drawGameScreen() {
+        spriteBatch.begin();
+        spriteBatch.draw(backgroundTexture, 0, 0, viewport.getWorldWidth(), viewport.getWorldHeight());
+        newtonSprite.draw(spriteBatch);
+
+        for (Sprite apple : appleSprites) {
+            apple.draw(spriteBatch);
+        }
+        spriteBatch.end();
     }
 
     private void input() {
@@ -97,87 +117,66 @@ public class Main implements ApplicationListener {
     }
 
     private void logic() {
-        float worldWidth = viewport.getWorldWidth();
-        float worldHeight = viewport.getWorldHeight();
-        float newtonWidth = newtonSprite.getWidth();
-        float newtonHeight = newtonSprite.getHeight();
-
-        newtonSprite.setX(MathUtils.clamp(newtonSprite.getX(), 0, worldWidth - newtonWidth));
+        newtonSprite.setX(MathUtils.clamp(newtonSprite.getX(), 0, viewport.getWorldWidth() - newtonSprite.getWidth()));
 
         float delta = Gdx.graphics.getDeltaTime();
-        newtonRectangle.set(newtonSprite.getX(), newtonSprite.getY(), newtonWidth, newtonHeight);
-
+        newtonRectangle.set(newtonSprite.getX(), newtonSprite.getY(), newtonSprite.getWidth(), newtonSprite.getHeight());
         for (int i = appleSprites.size - 1; i >= 0; i--) {
-            Sprite appleSprite = appleSprites.get(i);
-            float appleWidth = appleSprite.getWidth();
-            float appleHeight = appleSprite.getHeight();
+            Sprite apple = appleSprites.get(i);
+            apple.translateY(-2f * delta);
+            appleRectangle.set(apple.getX(), apple.getY(), apple.getWidth(), apple.getHeight());
 
-            appleSprite.translateY(-2f * delta);
-            appleRectangle.set(appleSprite.getX(), appleSprite.getY(), appleWidth, appleHeight);
-
-            if (appleSprite.getY() < -appleHeight) {
+            if (apple.getY() < -apple.getHeight()) {
                 gameOver = true;
-                appleSprites.removeIndex(i);
-                Gdx.app.exit();
+                backgroundMusic.stop();
+                break;
             } else if (newtonRectangle.overlaps(appleRectangle)) {
                 appleSprites.removeIndex(i);
                 appleFallSound.play();
             }
         }
+
         if (!gameOver) {
             appleTimer += delta;
             if (appleTimer > 1f) {
                 appleTimer = 0;
-                createApple();
+                spawnApple();
             }
         }
     }
-    private void draw() {
-        ScreenUtils.clear(Color.BLACK);
-        viewport.apply();
-        spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
-        spriteBatch.begin();
 
-        float worldWidth = viewport.getWorldWidth();
-        float worldHeight = viewport.getWorldHeight();
-
-        spriteBatch.draw(backgroundTexture, 0, 0, worldWidth, worldHeight);
-        newtonSprite.draw(spriteBatch);
-
-        for (Sprite appleSprite : appleSprites) {
-            appleSprite.draw(spriteBatch);
-        }
-
-        spriteBatch.end();
-    }
-
-    private void createApple() {
-        float appleWidth = 1;
-        float appleHeight = 1;
-        float worldWidth = viewport.getWorldWidth();
-        float worldHeight = viewport.getWorldHeight();
-
-        Sprite appleSprite = new Sprite(appleTexture);
-        appleSprite.setSize(appleWidth, appleHeight);
-        appleSprite.setX(MathUtils.random(0f, worldWidth - appleWidth));
-        appleSprite.setY(worldHeight);
-        appleSprites.add(appleSprite);
+    private void spawnApple() {
+        Sprite apple = new Sprite(appleTexture);
+        apple.setSize(0.8f, 0.8f);
+        apple.setPosition(
+            MathUtils.random(0, viewport.getWorldWidth() - apple.getWidth()),
+            viewport.getWorldHeight()
+        );
+        appleSprites.add(apple);
     }
 
     private void drawGameOver() {
         spriteBatch.begin();
-        font.setColor(Color.RED);
-        font.draw(spriteBatch, "GAME OVER", viewport.getWorldWidth() / 2 - 100, viewport.getWorldHeight() / 2);
+
+        spriteBatch.setColor(0, 0, 0, 0.3f);
+        spriteBatch.draw(backgroundTexture, 0, 0, viewport.getWorldWidth(), viewport.getWorldHeight());
+        spriteBatch.setColor(Color.WHITE);
+
+        font.setColor(Color.WHITE);
+        String text = "GAME OVER";
+        layout.setText(font, text);
+        float x = (viewport.getWorldWidth() - layout.width) / 2;
+        float y = viewport.getWorldHeight() / 2 + layout.height;
+        font.draw(spriteBatch, text, x, y);
+
         spriteBatch.end();
     }
 
     @Override
-    public void pause() {
-    }
+    public void pause() {}
 
     @Override
-    public void resume() {
-    }
+    public void resume() {}
 
     @Override
     public void dispose() {
