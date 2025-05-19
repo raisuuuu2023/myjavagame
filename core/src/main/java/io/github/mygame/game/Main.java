@@ -110,9 +110,9 @@ public class Main implements ApplicationListener {
         gameOver = false;
         score = 0;
 
-        font = new BitmapFont();
+        font = new BitmapFont(Gdx.files.internal("font.fnt"));
         font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        font.getData().setScale(0.08f);
+        font.getData().setScale(0.06f);
         font.setColor(Color.WHITE);
         layout = new GlyphLayout();
 
@@ -132,6 +132,9 @@ public class Main implements ApplicationListener {
         viewport.apply();
         spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
 
+        Gdx.gl.glClearColor(0,0,0,1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         if (gameOver) {
             drawGameScreen();
             drawGameOver();
@@ -144,6 +147,9 @@ public class Main implements ApplicationListener {
 
     private void drawGameScreen() {
         spriteBatch.begin();
+
+        spriteBatch.setColor(Color.WHITE);
+
         spriteBatch.draw(backgroundTexture, 0, 0, viewport.getWorldWidth(), viewport.getWorldHeight());
         newtonSprite.draw(spriteBatch);
 
@@ -157,8 +163,9 @@ public class Main implements ApplicationListener {
 
         String scoreText = "SCORE " + score;
         layout.setText(font, scoreText);
-        float x = (viewport.getWorldWidth() - layout.width) / 2;
+        float x = 0.2f;
         float y = viewport.getWorldHeight() - 0.2f;
+
         font.draw(spriteBatch, scoreText, x, y);
 
         spriteBatch.end();
@@ -264,7 +271,6 @@ public class Main implements ApplicationListener {
         float x = (viewport.getWorldWidth() - layout.width) / 2;
         float y = viewport.getWorldHeight() / 2 + layout.height;
         font.draw(spriteBatch, text, x, y);
-
         spriteBatch.end();
     }
 
