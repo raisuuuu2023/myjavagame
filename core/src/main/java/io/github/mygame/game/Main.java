@@ -7,6 +7,7 @@ import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.MathUtils;
@@ -22,6 +23,8 @@ public class Main implements ApplicationListener {
     private Texture newtonTexture;
     private Texture appleTexture;
     private Texture coconutTexture;
+    private Texture particleTexture;
+
     private Sound appleFallSound;
     private Music backgroundMusic;
     private SpriteBatch spriteBatch;
@@ -37,6 +40,36 @@ public class Main implements ApplicationListener {
     private GlyphLayout layout;
     private int score;
 
+    private class Particle {
+        Sprite sprite;
+        float velocityX, velocityY;
+        float life;
+
+        Particle(float x, float y) {
+            sprite = new Sprite(particleTexture);
+            sprite.setSize(0.15f, 0.15f);
+            sprite.setPosition(x, y);
+            velocityX = MathUtils.random(-1f, 1f);
+            velocityY = MathUtils.random(1f, 3f);
+            life = MathUtils.random(0.5f, 1f);
+        }
+
+        void update(float delta) {
+            life -= delta;
+            sprite.translate(velocityX * delta, velocityY * delta);
+            sprite.setColor(1, 1, 1, Math.max(0, life));
+        }
+
+        boolean isDead() {
+            return life <= 0;
+        }
+
+        void draw(SpriteBatch batch) {
+            sprite.draw(batch);
+        }
+    }
+    private Array<Particle> particles;
+
     @Override
     public void create() {
         assetManager = new AssetManager();
@@ -47,7 +80,6 @@ public class Main implements ApplicationListener {
         assetManager.load("coconut.png", Texture.class);
         assetManager.load("drop.mp3", Sound.class);
         assetManager.load("music.mp3", Music.class);
-
         assetManager.finishLoading();
 
         backgroundTexture = assetManager.get("math.jpg", Texture.class);
@@ -56,6 +88,8 @@ public class Main implements ApplicationListener {
         coconutTexture = assetManager.get("coconut.png", Texture.class);
         appleFallSound = assetManager.get("drop.mp3", Sound.class);
         backgroundMusic = assetManager.get("music.mp3", Music.class);
+
+        particleTexture = new Texture(Gdx.files.internal("particle.png"));
 
         spriteBatch = new SpriteBatch();
         viewport = new FitViewport(8, 6);
@@ -66,6 +100,8 @@ public class Main implements ApplicationListener {
 
         touchPos = new Vector2();
         fallingObjects = new Array<>();
+        particles = new Array<>();
+
         newtonRectangle = new Rectangle();
         objectRectangle = new Rectangle();
         gameOver = false;
@@ -90,7 +126,6 @@ public class Main implements ApplicationListener {
     @Override
     public void render() {
         ScreenUtils.clear(Color.BLACK);
-
         viewport.apply();
         spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
 
@@ -112,11 +147,17 @@ public class Main implements ApplicationListener {
         for (Sprite obj : fallingObjects) {
             obj.draw(spriteBatch);
         }
+
+        for (Particle p : particles) {
+            p.draw(spriteBatch);
+        }
+
         String scoreText = "SCORE " + score;
-        layout.setText(font,scoreText);
+        layout.setText(font, scoreText);
         float x = (viewport.getWorldWidth() - layout.width) / 2;
-        float y = viewport.getWorldHeight() - 0.3f;
-        font.draw(spriteBatch,scoreText, x, y);
+        float y = viewport.getWorldHeight() - 0.2f;
+        font.draw(spriteBatch, scoreText, x, y);
+
         spriteBatch.end();
     }
 
@@ -144,6 +185,14 @@ public class Main implements ApplicationListener {
         float delta = Gdx.graphics.getDeltaTime();
         newtonRectangle.set(newtonSprite.getX(), newtonSprite.getY(), newtonSprite.getWidth(), newtonSprite.getHeight());
 
+        for (int i = particles.size - 1; i >= 0; i--) {
+            Particle p = particles.get(i);
+            p.update(delta);
+            if (p.isDead()) {
+                particles.removeIndex(i);
+            }
+        }
+
         for (int i = fallingObjects.size - 1; i >= 0; i--) {
             Sprite obj = fallingObjects.get(i);
             obj.translateY(-2f * delta);
@@ -163,6 +212,12 @@ public class Main implements ApplicationListener {
                 } else {
                     appleFallSound.play();
                     score++;
+
+                    float px = obj.getX() + obj.getWidth() / 2f;
+                    float py = obj.getY() + obj.getHeight() / 2f;
+                    for (int j = 0; j < 10; j++) {
+                        particles.add(new Particle(px, py));
+                    }
                 }
                 fallingObjects.removeIndex(i);
             }
@@ -220,5 +275,6 @@ public class Main implements ApplicationListener {
         assetManager.dispose();
         spriteBatch.dispose();
         font.dispose();
+        particleTexture.dispose();
     }
 }
