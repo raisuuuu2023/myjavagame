@@ -20,6 +20,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 public class Main implements ApplicationListener {
     private AssetManager assetManager;
     private Texture backgroundTexture;
+    private Texture startScreenBackground;
     private Texture newtonTexture;
     private Texture appleTexture;
     private Texture coconutTexture;
@@ -37,9 +38,12 @@ public class Main implements ApplicationListener {
     private Rectangle newtonRectangle;
     private Rectangle objectRectangle;
     private boolean gameOver;
+    private boolean showStartButton = true;
     private BitmapFont font;
     private GlyphLayout layout;
     private int score;
+
+    private Rectangle startButtonBounds;
 
     private class Particle {
         Sprite sprite;
@@ -76,6 +80,7 @@ public class Main implements ApplicationListener {
         assetManager = new AssetManager();
 
         assetManager.load("math.jpg", Texture.class);
+        assetManager.load("background2.jpg", Texture.class);
         assetManager.load("Newton.png", Texture.class);
         assetManager.load("Apple.png", Texture.class);
         assetManager.load("coconut.png", Texture.class);
@@ -85,6 +90,7 @@ public class Main implements ApplicationListener {
         assetManager.finishLoading();
 
         backgroundTexture = assetManager.get("math.jpg", Texture.class);
+        startScreenBackground = assetManager.get("background2.jpg", Texture.class);
         newtonTexture = assetManager.get("Newton.png", Texture.class);
         appleTexture = assetManager.get("Apple.png", Texture.class);
         coconutTexture = assetManager.get("coconut.png", Texture.class);
@@ -116,6 +122,8 @@ public class Main implements ApplicationListener {
         font.setColor(Color.WHITE);
         layout = new GlyphLayout();
 
+        startButtonBounds = new Rectangle();
+
         backgroundMusic.setLooping(true);
         backgroundMusic.setVolume(0.5f);
         backgroundMusic.play();
@@ -132,16 +140,64 @@ public class Main implements ApplicationListener {
         viewport.apply();
         spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
 
-        Gdx.gl.glClearColor(0,0,0,1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        if (gameOver) {
+        if (showStartButton) {
+            drawStartButton();
+            handleStartButtonInput();
+        } else if (gameOver) {
             drawGameScreen();
             drawGameOver();
+            input();
         } else {
             drawGameScreen();
             input();
             logic();
+        }
+    }
+
+    private void drawStartButton() {
+        spriteBatch.begin();
+
+        spriteBatch.setColor(Color.WHITE);
+        spriteBatch.draw(startScreenBackground, 0, 0, viewport.getWorldWidth(), viewport.getWorldHeight());
+
+        String buttonText = "START";
+        float buttonWidth = 3f;
+        float buttonHeight = 0.7f;
+        float buttonX = (viewport.getWorldWidth() - buttonWidth) / 2f - 0.5f;
+        float buttonY = (viewport.getWorldHeight() - buttonHeight) / 2f + 0.5f;
+
+        startButtonBounds.set(buttonX, buttonY, buttonWidth, buttonHeight);
+
+        // Draw a semi-transparent black box behind the button text for readability
+        spriteBatch.setColor(0, 0, 0, 0.6f);
+        spriteBatch.draw(backgroundTexture, buttonX, buttonY, buttonWidth, buttonHeight);
+
+        spriteBatch.setColor(Color.WHITE);
+        layout.setText(font, buttonText);
+        float textX = buttonX + (buttonWidth - layout.width) / 2f;
+        float textY = buttonY + (buttonHeight + layout.height) / 2f - 0.1f;
+
+        font.draw(spriteBatch, buttonText, textX, textY);
+
+        spriteBatch.end();
+    }
+
+    private void handleStartButtonInput() {
+        if (Gdx.input.justTouched()) {
+            Vector2 touch = new Vector2(Gdx.input.getX(), Gdx.input.getY());
+            viewport.unproject(touch);
+            if (startButtonBounds.contains(touch.x, touch.y)) {
+                showStartButton = false;
+                score = 0;
+                gameOver = false;
+                fallingObjects.clear();
+                particles.clear();
+                backgroundMusic.play();
+                newtonSprite.setPosition(2, 0.1f);
+            }
         }
     }
 
@@ -268,9 +324,10 @@ public class Main implements ApplicationListener {
 
         String text = "GAME OVER";
         layout.setText(font, text);
-        float x = (viewport.getWorldWidth() - layout.width) / 2;
-        float y = viewport.getWorldHeight() / 2 + layout.height;
+        float x = (viewport.getWorldWidth() - layout.width) / 2f;
+        float y = viewport.getWorldHeight() / 2f + layout.height;
         font.draw(spriteBatch, text, x, y);
+
         spriteBatch.end();
     }
 
@@ -286,5 +343,6 @@ public class Main implements ApplicationListener {
         spriteBatch.dispose();
         font.dispose();
         particleTexture.dispose();
+        startScreenBackground.dispose();
     }
 }
