@@ -3,65 +3,78 @@ package io.github.mygame.game;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 public class Main implements ApplicationListener {
-    Texture backgroundTexture;
-    Texture newtonTexture;
-    Texture appleTexture;
-    Texture coconutTexture;
-    Sound appleFallSound;
-    Music backgroundMusic;
-    SpriteBatch spriteBatch;
-    FitViewport viewport;
-    Sprite newtonSprite;
-    Vector2 touchPos;
-    Array<Sprite> fallingObjects;
-    float spawnTimer;
-    Rectangle newtonRectangle;
-    Rectangle objectRectangle;
-    boolean gameOver;
-    BitmapFont font;
-    GlyphLayout layout;
+    private AssetManager assetManager;
+    private Texture backgroundTexture;
+    private Texture newtonTexture;
+    private Texture appleTexture;
+    private Texture coconutTexture;
+    private Sound appleFallSound;
+    private Music backgroundMusic;
+    private SpriteBatch spriteBatch;
+    private FitViewport viewport;
+    private Sprite newtonSprite;
+    private Vector2 touchPos;
+    private Array<Sprite> fallingObjects;
+    private float spawnTimer;
+    private Rectangle newtonRectangle;
+    private Rectangle objectRectangle;
+    private boolean gameOver;
+    private BitmapFont font;
+    private GlyphLayout layout;
+    private int score;
 
     @Override
     public void create() {
-        backgroundTexture = new Texture(Gdx.files.internal("math.jpg"));
-        newtonTexture = new Texture(Gdx.files.internal("Newton.png"));
-        appleTexture = new Texture(Gdx.files.internal("Apple.png"));
-        coconutTexture = new Texture(Gdx.files.internal("coconut.png"));
-        appleFallSound = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
-        backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
+        assetManager = new AssetManager();
+
+        assetManager.load("math.jpg", Texture.class);
+        assetManager.load("Newton.png", Texture.class);
+        assetManager.load("Apple.png", Texture.class);
+        assetManager.load("coconut.png", Texture.class);
+        assetManager.load("drop.mp3", Sound.class);
+        assetManager.load("music.mp3", Music.class);
+
+        assetManager.finishLoading();
+
+        backgroundTexture = assetManager.get("math.jpg", Texture.class);
+        newtonTexture = assetManager.get("Newton.png", Texture.class);
+        appleTexture = assetManager.get("Apple.png", Texture.class);
+        coconutTexture = assetManager.get("coconut.png", Texture.class);
+        appleFallSound = assetManager.get("drop.mp3", Sound.class);
+        backgroundMusic = assetManager.get("music.mp3", Music.class);
 
         spriteBatch = new SpriteBatch();
         viewport = new FitViewport(8, 6);
 
         newtonSprite = new Sprite(newtonTexture);
         newtonSprite.setSize(2, 1);
-        newtonSprite.setPosition(3, 0.5f);
+        newtonSprite.setPosition(2, 0.1f);
 
         touchPos = new Vector2();
         fallingObjects = new Array<>();
         newtonRectangle = new Rectangle();
         objectRectangle = new Rectangle();
         gameOver = false;
+        score = 0;
 
         font = new BitmapFont();
         font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         font.getData().setScale(0.08f);
+        font.setColor(Color.WHITE);
         layout = new GlyphLayout();
 
         backgroundMusic.setLooping(true);
@@ -99,6 +112,11 @@ public class Main implements ApplicationListener {
         for (Sprite obj : fallingObjects) {
             obj.draw(spriteBatch);
         }
+        String scoreText = "SCORE " + score;
+        layout.setText(font,scoreText);
+        float x = (viewport.getWorldWidth() - layout.width) / 2;
+        float y = viewport.getWorldHeight() - 0.3f;
+        font.draw(spriteBatch,scoreText, x, y);
         spriteBatch.end();
     }
 
@@ -117,11 +135,12 @@ public class Main implements ApplicationListener {
             viewport.unproject(touchPos);
             newtonSprite.setCenterX(touchPos.x);
         }
+
+        float worldWidth = viewport.getWorldWidth();
+        newtonSprite.setX(MathUtils.clamp(newtonSprite.getX(), 0, worldWidth - newtonSprite.getWidth()));
     }
 
     private void logic() {
-        newtonSprite.setX(MathUtils.clamp(newtonSprite.getX(), 0, viewport.getWorldWidth() - newtonSprite.getWidth()));
-
         float delta = Gdx.graphics.getDeltaTime();
         newtonRectangle.set(newtonSprite.getX(), newtonSprite.getY(), newtonSprite.getWidth(), newtonSprite.getHeight());
 
@@ -143,6 +162,7 @@ public class Main implements ApplicationListener {
                     backgroundMusic.stop();
                 } else {
                     appleFallSound.play();
+                    score++;
                 }
                 fallingObjects.removeIndex(i);
             }
@@ -197,12 +217,7 @@ public class Main implements ApplicationListener {
 
     @Override
     public void dispose() {
-        backgroundTexture.dispose();
-        newtonTexture.dispose();
-        appleTexture.dispose();
-        coconutTexture.dispose();
-        appleFallSound.dispose();
-        backgroundMusic.dispose();
+        assetManager.dispose();
         spriteBatch.dispose();
         font.dispose();
     }
