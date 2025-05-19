@@ -26,7 +26,7 @@ public class Main implements ApplicationListener {
     private Texture particleTexture;
 
     private Sound appleFallSound;
-    private Sound ouchSound;
+    private Sound ouchSound;           // Added ouch sound
     private Music backgroundMusic;
     private SpriteBatch spriteBatch;
     private FitViewport viewport;
@@ -80,7 +80,7 @@ public class Main implements ApplicationListener {
         assetManager.load("Apple.png", Texture.class);
         assetManager.load("coconut.png", Texture.class);
         assetManager.load("drop.mp3", Sound.class);
-        assetManager.load("ou.mp3", Sound.class);
+        assetManager.load("ouch.mp3", Sound.class);          // Load ouch sound
         assetManager.load("music.mp3", Music.class);
         assetManager.finishLoading();
 
@@ -89,7 +89,7 @@ public class Main implements ApplicationListener {
         appleTexture = assetManager.get("Apple.png", Texture.class);
         coconutTexture = assetManager.get("coconut.png", Texture.class);
         appleFallSound = assetManager.get("drop.mp3", Sound.class);
-        ouchSound = assetManager.get("ou.mp3", Sound.class);
+        ouchSound = assetManager.get("ouch.mp3", Sound.class);   // Get ouch sound
         backgroundMusic = assetManager.get("music.mp3", Music.class);
 
         particleTexture = new Texture(Gdx.files.internal("particle.png"));
@@ -210,7 +210,7 @@ public class Main implements ApplicationListener {
                 break;
             } else if (newtonRectangle.overlaps(objectRectangle)) {
                 if (obj.getTexture() == coconutTexture) {
-                    ouchSound.play();
+                    ouchSound.play();            // Play ouch sound on coconut catch
                     gameOver = true;
                     backgroundMusic.stop();
                 } else {
