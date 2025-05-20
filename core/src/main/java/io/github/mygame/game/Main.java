@@ -171,7 +171,7 @@ public class Main implements ApplicationListener {
 
         startButtonBounds.set(buttonX, buttonY, buttonWidth, buttonHeight);
 
-        // Draw a semi-transparent black box behind the button text for readability
+
         spriteBatch.setColor(0, 0, 0, 0.6f);
         spriteBatch.draw(backgroundTexture, buttonX, buttonY, buttonWidth, buttonHeight);
 
