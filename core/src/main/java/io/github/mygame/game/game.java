@@ -52,10 +52,9 @@ public class game implements ApplicationListener {
         appleRectangle = new Rectangle();
         gameOver = false;
 
-        // Generate font using FreeType
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Lacquer.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        parameter.size = 48; // font size in pixels, adjust as needed
+        parameter.size = 48; 
         font = generator.generateFont(parameter);
         generator.dispose();
 
